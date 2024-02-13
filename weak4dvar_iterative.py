@@ -1,10 +1,10 @@
 from firedrake import *
 
-ncells = 20
+ncells = 50
 base_mesh = UnitIntervalMesh(ncells)
 
 height = 1.
-nlayers = 10
+nlayers = 50
 mesh = ExtrudedMesh(base_mesh, layers=nlayers, layer_height=height/nlayers)
 
 # make some function spaces
@@ -63,7 +63,7 @@ JFp = derivative(derivative(Fp, wkp1), wkp1)
 
 # make a problem to solve
 daparams = {
-    #"snes_monitor": None,
+    "snes_monitor": None,
     "ksp_type": "gmres",
     "ksp_monitor": None,
     "pc_type": "lu",
