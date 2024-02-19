@@ -53,22 +53,13 @@ dF = derivative(F, wkp1)
 
 # preconditioning operator
 # "data" (g0)
-Fp = 0.5*(ukp1-u1)*(ukp1-u1)/C*ds_t # integral over t=1 "surface"
+#Fp = 0.5*(ukp1-u1)*(ukp1-u1)/C*ds_t # integral over t=1 "surface"
 # "cost"
-Fp += -0.5*pkp1*pkp1/Sigma*dx
+Fp = -0.5*pkp1*pkp1/Sigma*dx
 # "dynamical constraint"
 Fp += (pkp1*ukp1.dx(1) + pkp1.dx(0)*ukp1.dx(0))*dx
 
 JFp = derivative(derivative(Fp, wkp1), wkp1)
-
-# make a problem to solve
-daparams = {
-    "snes_monitor": None,
-    "ksp_type": "gmres",
-    "ksp_monitor": None,
-    "pc_type": "lu",
-    "pc_factor_mat_solver_type": "mumps"
-}
 
 bcs = [DirichletBC(W.sub(0), u0 - gamma*pk, "bottom")]
 
@@ -110,10 +101,22 @@ class DiagPC(PCBase):
 
     def applyTranspose(self, pc, x, y):
         raise NotImplementedError
-            
+
+# make a problem to solve
+lu_params = {
+    "snes_type": "ksponly",
+    "snes_monitor": None,
+    "ksp_type": "gmres",
+    "ksp_atol": 1.0e-50,
+    "ksp_rtol": 1.0e-8,
+    "ksp_monitor": None,
+    "pc_type": "lu",
+    "pc_factor_mat_solver_type": "mumps"
+}
+    
 DAProblem = NonlinearVariationalProblem(dF, wkp1, Jp=JFp, bcs=bcs)
 DASolver = NonlinearVariationalSolver(DAProblem,
-                                      solver_parameters=daparams)
+                                      solver_parameters=lu_params)
 
 err = 1.0e50
 tol = 1.0e-6
