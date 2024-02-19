@@ -72,6 +72,45 @@ daparams = {
 
 bcs = [DirichletBC(W.sub(0), u0 - gamma*pk, "bottom")]
 
+class DiagPC(PCBase):
+    def initialize(self, pc):
+        if pc.getType() != "python":
+            raise ValueError("Expecting PC type python")
+        prefix = pc.getOptionsPrefix() + "Diag_"
+
+        # we assume P has things stuffed inside of it
+        _, P = pc.getOperators()
+        context = P.getPythonContext()
+        appctx = context.appctx
+        self.appctx = appctx
+
+        # FunctionSpace checks
+        u, v = context.a.arguments()
+        if u.function_space() != v.function_space():
+            raise ValueError("Pressure space test and trial space differ")
+
+        V = u.function_space()
+        self.xfstar = Cofunction(V.dual())
+        self.yf = Function(V)
+        
+    def update(self, pc):
+        pass
+
+    def apply(self, pc, x, y):
+        
+        # copy petsc vec into Function
+        with self.xfstar.dat.vec_wo as v:
+            x.copy(v)
+            
+        # THIS IS WHERE WE DO SOMETHING
+            
+        # copy petsc vec into Function
+        with self.yf.dat.vec_ro as v:
+            v.copy(y)
+
+    def applyTranspose(self, pc, x, y):
+        raise NotImplementedError
+            
 DAProblem = NonlinearVariationalProblem(dF, wkp1, Jp=JFp, bcs=bcs)
 DASolver = NonlinearVariationalSolver(DAProblem,
                                       solver_parameters=daparams)
